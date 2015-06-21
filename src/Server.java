@@ -13,6 +13,7 @@ public class Server {
     private DataInputStream stream = null;
 
     private static final int NUM_ARGS = 1;
+    private static final String DISCONNECT = ".disconnect";
 
     /**
      *
@@ -20,14 +21,47 @@ public class Server {
      */
     public Server(int port) {
         try {
-            server = new ServerSocket(port);
-            System.out.println("Server started...");
-            System.out.println("Server waiting...");
-            sock = server.accept();
-            System.out.println("connected!");
+            server = new ServerSocket(port);    // Bind
+            sock = server.accept();             // Accept
+            System.out.println("Client connected: " + sock);
+
+            // Handle connection
+            stream = new DataInputStream(new BufferedInputStream(sock.getInputStream()));
+            boolean active = true;
+            while (active) {
+                try {
+                    String data = stream.readUTF(); // Conversion
+                    System.out.println("Got: " + data);
+
+                    // Check for disconnect
+                    active = !data.equals(DISCONNECT);
+                }
+                catch (IOException ioe) {
+                    active = false;
+                    System.out.println("Client disconnected: " + sock);
+                }
+            }
+
+            // Close connection
+            closeConnection();
         }
         catch (IOException e) {
-            System.out.println(e.getMessage());
+            System.out.println("Exception: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Close connections at end of transfer.
+     */
+    public void closeConnection() {
+        try {
+            if (sock != null)
+                sock.close();
+            if (stream != null)
+                stream.close();
+        }
+        catch (IOException ioe) {
+            System.out.println("Exception: " + ioe.getMessage());
         }
     }
 
