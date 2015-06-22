@@ -6,7 +6,9 @@ JC = javac
 
 CLASSES = \
 	Server.java \
-	Client.java 
+	Client.java \
+	ConnectionThread.java \
+	ReaderThread.java
 
 default: classes
 

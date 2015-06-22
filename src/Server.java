@@ -6,40 +6,32 @@
 
 import java.net.*;
 import java.io.*;
+import java.util.ArrayList;
 
 public class Server {
     private Socket sock = null;
-    private ServerSocket server = null;
-    private DataInputStream stream = null;
+    private ServerSocket serverSock = null;
+    private DataOutputStream streamOut = null;
+
+    private ArrayList<ConnectionThread> connections = null;
 
     private static final int NUM_ARGS = 1;
-    private static final String DISCONNECT = ".disconnect";
 
     /**
-     *
-     * @param port integer value.
+     * Main loop to run the server. Accepts incoming connections and creates
+     * thread to handle each.
+     * @param port Port number for the server to run on.
      */
     public Server(int port) {
+        connections = new ArrayList<ConnectionThread>();
+
         try {
-            server = new ServerSocket(port);    // Bind
-            sock = server.accept();             // Accept
-            System.out.println("Client connected: " + sock);
-
-            // Handle connection
-            stream = new DataInputStream(new BufferedInputStream(sock.getInputStream()));
-            boolean active = true;
-            while (active) {
-                try {
-                    String data = stream.readUTF(); // Conversion
-                    System.out.println("Got: " + data);
-
-                    // Check for disconnect
-                    active = !data.equals(DISCONNECT);
-                }
-                catch (IOException ioe) {
-                    active = false;
-                    System.out.println("Client disconnected: " + sock);
-                }
+            serverSock = new ServerSocket(port);    // Bind
+            // Accept loop
+            while ((sock = serverSock.accept()) != null) {
+                // Create the thread
+                ConnectionThread thread = new ConnectionThread(this, sock);
+                connections.add(thread);
             }
 
             // Close connection
@@ -51,14 +43,36 @@ public class Server {
     }
 
     /**
+     * Send message to all clients.
+     * THIS COULD POSSIBLY GO IN THE THREAD ITSELF (the sending part).
+     */
+    public synchronized void sendAll(String message, int port) throws IOException {
+        for (ConnectionThread connection : connections) {
+            try {
+                streamOut = new DataOutputStream(connection.getSock().getOutputStream());
+                streamOut.writeUTF("" + port + ": " + message);
+            } catch (IOException e) {
+                System.out.println("Exception: " + e.getMessage());
+            }
+
+        }
+    }
+
+    /**
+     * Delete a connection from list after disconnect.
+     * @param connection ConnectionThread to be removed.
+     */
+    public synchronized void removeConnection(ConnectionThread connection) {
+        connections.remove(connection);
+    }
+
+    /**
      * Close connections at end of transfer.
      */
     public void closeConnection() {
         try {
             if (sock != null)
                 sock.close();
-            if (stream != null)
-                stream.close();
         }
         catch (IOException ioe) {
             System.out.println("Exception: " + ioe.getMessage());

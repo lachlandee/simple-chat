@@ -10,9 +10,9 @@ public class Client {
     private Socket sock = null;
     private Scanner kb = null;
     private DataOutputStream streamOut = null;
+    private ReaderThread reader = null;
 
     private static final int ARG_LENGTH = 2;
-    private static final String DISCONNECT = ".disconnect";
 
     public Client(String host, int port) {
 
@@ -21,6 +21,7 @@ public class Client {
             sock = new Socket(host, port);
             kb = new Scanner(System.in);
             streamOut = new DataOutputStream(sock.getOutputStream());
+            reader = new ReaderThread(sock);
         }
         catch (UnknownHostException uhe) {
             System.out.println("Can not connect to host '" + uhe.getMessage() + "'");
@@ -33,9 +34,9 @@ public class Client {
             return;
         }
 
-        String data = "";
+        String data;
         // Loop until client wants to disconnect
-        while (!data.equals(DISCONNECT)) {
+        while (true) {
             try {
                 data = kb.nextLine();
                 streamOut.writeUTF(data);
