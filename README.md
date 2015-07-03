@@ -1,5 +1,5 @@
 # simple-chat
-A simple chat program, built in java.
+A simple command line chat program, built in java.
 
 
 ## To run
